@@ -46,6 +46,11 @@ def build_url_factory(base_url: str) -> Callable[[str, Dict[str, str]], str]:
         elif name == "group_posts":
             slug = params["group_slug"]
             path = f"groups/{slug}/"
+        elif name == "static":
+            static_path = params.get("path", "")
+            if static_path.startswith("/"):
+                static_path = static_path[1:]
+            path = f"static/{static_path}"
         else:
             path = ""
         return f"{base}{path}"
