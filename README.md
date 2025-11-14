@@ -45,8 +45,8 @@ uv run python scripts/build_static.py --base-url your-repo-name
 
 ## Vercel 部署
 
-1. 在 Vercel 连接仓库，Framework 选择 “Other”，Python 版本设置为 3.10。
-2. 配置环境变量：
+1. 在 Vercel 连接仓库，Framework 选择 “Other”，Python 版本设置为 3.10。项目配置入口：`https://vercel.com/dashboard/settings/projects/<你的项目名称>`（将尖括号替换为真实项目名）。
+2. 在该页面的 Environment Variables 中添加：
 
 ```
 RINBLOG_DB_PATH=/tmp/rinblog.db

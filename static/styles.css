@@ -1,38 +1,110 @@
 :root {
-  color-scheme: light dark;
-  font-family: "Segoe UI", sans-serif;
-  line-height: 1.6;
+  color-scheme: light;
+  font-family: "Inter", "Segoe UI", sans-serif;
+  line-height: 1.7;
+  --bg: #f3f6ff;
+  --surface: #ffffff;
+  --surface-alt: #f8faff;
+  --text: #1b2138;
+  --muted: #6b7290;
+  --accent: #5b6bff;
+  --accent-soft: rgba(91, 107, 255, 0.14);
+  --border: rgba(84, 97, 180, 0.12);
+  --shadow: 0 20px 45px rgba(53, 70, 150, 0.16);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background-color: #f8f9fb;
-  color: #1f2023;
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #ffffff, var(--bg));
+  color: var(--text);
 }
 
-.site-header,
-.site-footer {
-  background-color: #1f2023;
-  color: #ffffff;
-}
-
-.site-header a,
-.site-footer a {
-  color: inherit;
+a {
+  color: var(--accent);
   text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+a:hover {
+  opacity: 0.85;
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-footer {
+  background: transparent;
+  color: var(--muted);
+  padding-bottom: 2.5rem;
 }
 
 .site-header .container,
 .site-footer .container,
 .container {
-  width: min(960px, 96%);
+  width: min(940px, 92%);
   margin: 0 auto;
-  padding: 1.5rem 0;
+  padding: 1.6rem 0;
 }
 
-.site-header nav a {
-  margin-right: 1rem;
+.site-header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.site-header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.1rem;
   font-weight: 600;
+}
+
+main.container {
+  margin-top: 2.8rem;
+  margin-bottom: 3.4rem;
+  background: var(--surface);
+  border-radius: 26px;
+  padding: clamp(1.6rem, 5vw, 3.2rem);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.6rem;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .post-items,
@@ -41,89 +113,172 @@ body {
   list-style: none;
   padding: 0;
   margin: 0;
+  display: grid;
+  gap: 1.6rem;
 }
 
 .post-items li,
 .group-items li,
 .comment-list li {
-  margin-bottom: 1.5rem;
-  background: #ffffff;
-  padding: 1.25rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(31, 32, 35, 0.08);
+  background: var(--surface-alt);
+  border-radius: 20px;
+  padding: 1.7rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 40px rgba(40, 50, 110, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.daily-highlight article,
-.post-detail {
-  background: #ffffff;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 14px rgba(31, 32, 35, 0.1);
+.post-items li:hover,
+.group-items li:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 22px 46px rgba(40, 55, 130, 0.18);
+}
+
+.group-items a {
+  color: inherit;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  background: var(--accent-soft);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+}
+
+.daily-highlight {
+  margin-bottom: 3rem;
+  padding: 2.2rem;
+  border-radius: 26px;
+  background: linear-gradient(145deg, rgba(91, 107, 255, 0.12), transparent),
+    var(--surface-alt);
+  border: 1px solid rgba(91, 107, 255, 0.24);
+  box-shadow: 0 28px 70px rgba(91, 107, 255, 0.28);
+}
+
+.daily-highlight h2 {
+  margin-bottom: 1.1rem;
+}
+
+.read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  margin-top: 1.2rem;
 }
 
 .markdown-body {
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 .markdown-body h1,
 .markdown-body h2,
 .markdown-body h3 {
-  margin-top: 1.8rem;
+  margin-top: 2.2rem;
+  margin-bottom: 0.8rem;
+}
+
+.markdown-body p {
+  margin-bottom: 1rem;
+}
+
+.post-detail {
+  background: var(--surface-alt);
+  padding: clamp(2rem, 5vw, 2.8rem);
+  border-radius: 24px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(40, 55, 130, 0.16);
 }
 
 .comment-form {
-  margin-top: 2rem;
+  margin-top: 2.4rem;
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
+  background: var(--surface);
+  padding: 1.8rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+}
+
+.comment-form label {
+  display: grid;
+  gap: 0.55rem;
+  font-weight: 600;
 }
 
 .comment-form input,
 .comment-form textarea {
   width: 100%;
-  padding: 0.75rem;
-  border-radius: 8px;
-  border: 1px solid #cfd1d7;
+  padding: 0.9rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(91, 107, 255, 0.28);
   font: inherit;
+  background: #fff;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.comment-form input:focus,
+.comment-form textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
 }
 
 .comment-form button {
   width: fit-content;
-  padding: 0.75rem 1.5rem;
+  padding: 0.9rem 2rem;
   border: none;
-  border-radius: 8px;
-  background-color: #1f2023;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), #7f8bff);
   color: #ffffff;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 16px 36px rgba(91, 107, 255, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .comment-form button:hover {
-  opacity: 0.85;
+  transform: translateY(-2px);
+  box-shadow: 0 22px 42px rgba(91, 107, 255, 0.4);
 }
 
 .form-error {
-  color: #c53030;
+  color: #d64545;
   font-weight: 600;
   margin: 0;
 }
 
-.group-items a {
-  display: flex;
-  justify-content: space-between;
-  color: #1f2023;
-  text-decoration: none;
+.comment-list li {
+  box-shadow: 0 18px 40px rgba(40, 55, 130, 0.14);
 }
 
-.section-heading {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 1rem;
+.comment-list strong {
+  font-size: 1rem;
 }
 
-.meta {
-  color: #64666a;
-  font-size: 0.9rem;
+.container > section + section {
+  margin-top: 3rem;
+}
+
+@media (max-width: 760px) {
+  main.container {
+    padding: 1.6rem;
+    border-radius: 20px;
+  }
+
+  .site-header nav {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .daily-highlight {
+    padding: 1.8rem;
+  }
 }
 
 
