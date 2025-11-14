@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Group: {{ group.name }} - RinBlog{% endblock %}
+
+{% block content %}
+  <section class="group-header">
+    <h2>{{ group.name }}</h2>
+    {% if group.description %}
+      <p class="group-description">{{ group.description }}</p>
+    {% endif %}
+  </section>
+
+  <section class="post-list">
+    {% if posts %}
+      <ul class="post-items">
+        {% for post in posts %}
+          <li>
+            <article>
+              <h3><a href="{{ url_for('post_detail', slug=post.slug) }}">{{ post.title }}</a></h3>
+              <p class="meta">{{ post.display_date }}</p>
+              <p class="summary">{{ post.summary }}</p>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No posts found for this group.</p>
+    {% endif %}
+  </section>
+{% endblock %}
+
+

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Notes - RinBlog{% endblock %}
+
+{% block content %}
+  <section class="daily-list">
+    <h2>Daily Notes</h2>
+    {% if posts %}
+      <ul class="post-items">
+        {% for post in posts %}
+          <li>
+            <article>
+              <h3><a href="{{ url_for('post_detail', slug=post.slug) }}">{{ post.title }}</a></h3>
+              <p class="meta">{{ post.display_date }}</p>
+              <div class="markdown-body excerpt">
+                {{ post.excerpt | safe }}
+              </div>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No daily notes yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}
+
+

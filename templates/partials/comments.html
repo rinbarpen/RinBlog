@@ -1,0 +1,41 @@
+<section id="comments">
+  <h3>Comments</h3>
+  {% if comments_enabled %}
+    {% if comments %}
+      <ul class="comment-list">
+        {% for comment in comments %}
+          <li>
+            <article>
+              <header>
+                <strong>{{ comment.display_name }}</strong>
+                <span class="meta">{{ comment.display_time }}</span>
+              </header>
+              <p>{{ comment.content }}</p>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No comments yet. Be the first to share your thoughts!</p>
+    {% endif %}
+
+    <form class="comment-form" method="post" action="{{ url_for('create_comment', slug=post.slug) }}">
+      {% if form_error %}
+        <p class="form-error">{{ form_error }}</p>
+      {% endif %}
+      <label>
+        Nickname (optional)
+        <input type="text" name="nickname" maxlength="50" />
+      </label>
+      <label>
+        Comment
+        <textarea name="content" rows="4" required></textarea>
+      </label>
+      <button type="submit">Post Comment</button>
+    </form>
+  {% else %}
+    <p>Comments are available on the live site.</p>
+  {% endif %}
+</section>
+
+

@@ -1,0 +1,3 @@
+"""Initialize RinBlog application package."""
+
+

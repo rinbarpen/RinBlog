@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - RinBlog{% endblock %}
+
+{% block content %}
+  <article class="post-detail">
+    <header>
+      <h2>{{ post.title }}</h2>
+      <p class="meta">
+        {{ post.display_date }}
+        {% if post.group_label %}
+          · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}">{{ post.group_label }}</a>
+        {% endif %}
+      </p>
+    </header>
+    <div class="markdown-body">
+      {{ post.content_html | safe }}
+    </div>
+  </article>
+
+  {% include "partials/comments.html" %}
+{% endblock %}
+
+

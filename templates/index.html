@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Home - RinBlog{% endblock %}
+
+{% block content %}
+  {% if latest_daily %}
+    <section class="daily-highlight">
+      <h2>Daily Highlight</h2>
+      <article>
+        <h3><a href="{{ url_for('post_detail', slug=latest_daily.slug) }}">{{ latest_daily.title }}</a></h3>
+        <p class="meta">{{ latest_daily.display_date }}</p>
+        <div class="markdown-body">{{ latest_daily.excerpt | safe }}</div>
+        <a class="read-more" href="{{ url_for('daily_posts') }}">Read all daily posts →</a>
+      </article>
+    </section>
+  {% endif %}
+
+  <section class="post-list">
+    <div class="section-heading">
+      <h2>Latest Posts</h2>
+      <p>Thoughts, tutorials, and updates.</p>
+    </div>
+    {% if posts %}
+      <ul class="post-items">
+        {% for post in posts %}
+          <li>
+            <article>
+              <h3><a href="{{ url_for('post_detail', slug=post.slug) }}">{{ post.title }}</a></h3>
+              <p class="meta">
+                {{ post.display_date }}
+                {% if post.group_label %}
+                  · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}">{{ post.group_label }}</a>
+                {% endif %}
+              </p>
+              <p class="summary">{{ post.summary }}</p>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No posts yet. Check back soon!</p>
+    {% endif %}
+  </section>
+
+  <section class="groups">
+    <div class="section-heading">
+      <h2>Browse by Group</h2>
+    </div>
+    {% if groups %}
+      <ul class="group-items">
+        {% for group in groups %}
+          <li>
+            <a href="{{ url_for('group_posts', group_slug=group.slug) }}">
+              <span class="group-name">{{ group.name }}</span>
+              <span class="group-count">{{ group.post_count }} posts</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No groups defined yet.</p>
+    {% endif %}
+  </section>
+{% endblock %}
+
+
