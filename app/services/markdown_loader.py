@@ -112,6 +112,18 @@ def list_posts_by_group(group_slug: str) -> List[BlogPost]:
     return list(_posts_by_group.get(group_slug, []))
 
 
+def list_posts_by_tag(tag: str) -> List[BlogPost]:
+    """List posts that contain the given tag (case-insensitive)."""
+    normalized = tag.lower().strip()
+    if not normalized:
+        return []
+    matching: List[BlogPost] = []
+    for post in _ordered_posts:
+        if any(t.lower() == normalized for t in post.tags):
+            matching.append(post)
+    return matching
+
+
 def _clear_memory() -> None:
     global _posts_index, _ordered_posts, _groups_index, _posts_by_group, _daily_posts
     _posts_index = {}

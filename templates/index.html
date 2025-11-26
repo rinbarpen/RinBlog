@@ -22,7 +22,25 @@
     </div>
     {% if posts %}
       <ul class="post-items">
-        {% for post in posts %}
+        {% if posts_badges is defined %}
+          {% for post, badges in posts_badges %}
+            <li>
+              <article>
+                <h3><a href="{{ url_for('post_detail', slug=post.slug) }}">{{ post.title }}</a></h3>
+                <p class="meta">
+                  {{ post.display_date }}
+                  {% if post.group_label %}
+                    · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}">{{ post.group_label }}</a>
+                  {% endif %}
+                </p>
+                <p class="summary">{{ post.summary }}</p>
+                {% include "partials/tag_badges.html" with context %}
+              </article>
+            </li>
+          {% endfor %}
+        {% else %}
+          {% for post in posts %}
+            {% set badges = [] %}
           <li>
             <article>
               <h3><a href="{{ url_for('post_detail', slug=post.slug) }}">{{ post.title }}</a></h3>
@@ -33,9 +51,11 @@
                 {% endif %}
               </p>
               <p class="summary">{{ post.summary }}</p>
+                {% include "partials/tag_badges.html" with context %}
             </article>
           </li>
-        {% endfor %}
+          {% endfor %}
+        {% endif %}
       </ul>
     {% else %}
       <p>No posts yet. Check back soon!</p>

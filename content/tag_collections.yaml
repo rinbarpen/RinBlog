@@ -1,0 +1,16 @@
+collections:
+  - name: Tutorials
+    slug: tutorials
+    description: Deep dive guides and how-tos.
+    color: "#7c8cff"
+    tags:
+      - tutorial
+      - fastapi
+  - name: Project Intro
+    slug: introduction
+    description: First steps and welcome notes.
+    color: "#ffb347"
+    tags:
+      - intro
+
+

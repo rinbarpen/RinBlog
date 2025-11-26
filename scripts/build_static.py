@@ -18,7 +18,7 @@ import sys
 
 sys.path.insert(0, str(BASE_DIR))
 
-from app.services import markdown_loader
+from app.services import markdown_loader, tag_collections
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 DEFAULT_OUTPUT = BASE_DIR / "site"
@@ -46,6 +46,9 @@ def build_url_factory(base_url: str) -> Callable[[str, Dict[str, str]], str]:
         elif name == "group_posts":
             slug = params["group_slug"]
             path = f"groups/{slug}/"
+        elif name == "collection_posts":
+            slug = params["collection_slug"]
+            path = f"collections/{slug}/"
         elif name == "static":
             static_path = params.get("path", "")
             if static_path.startswith("/"):
@@ -87,6 +90,7 @@ def render_template(env: Environment, template_name: str, destination: Path, con
 
 def build_site(output_dir: Path, base_url: str) -> None:
     markdown_loader.refresh_cache()
+    tag_collections.refresh()
     url_builder = build_url_factory(base_url)
     env = prepare_environment(url_builder)
 
@@ -96,9 +100,11 @@ def build_site(output_dir: Path, base_url: str) -> None:
 
     posts = markdown_loader.list_posts(include_daily=True)
     regular_posts = [post for post in posts if not post.is_daily]
+    regular_with_badges = [(post, tag_collections.build_badges(post.tags)) for post in regular_posts]
     groups = markdown_loader.list_groups()
     latest_daily = markdown_loader.get_latest_daily()
     daily_posts = markdown_loader.list_daily_posts()
+    daily_with_badges = [(post, tag_collections.build_badges(post.tags)) for post in daily_posts]
 
     render_template(
         env,
@@ -107,6 +113,7 @@ def build_site(output_dir: Path, base_url: str) -> None:
         {
             "request": request,
             "posts": regular_posts,
+            "posts_badges": regular_with_badges,
             "groups": groups,
             "latest_daily": latest_daily,
             "comments_enabled": False,
@@ -120,11 +127,13 @@ def build_site(output_dir: Path, base_url: str) -> None:
         {
             "request": request,
             "posts": daily_posts,
+            "posts_badges": daily_with_badges,
             "comments_enabled": False,
         },
     )
 
     for group in groups:
+        group_posts = markdown_loader.list_posts_by_group(group.slug)
         render_template(
             env,
             "group.html",
@@ -132,7 +141,54 @@ def build_site(output_dir: Path, base_url: str) -> None:
             {
                 "request": request,
                 "group": group,
-                "posts": markdown_loader.list_posts_by_group(group.slug),
+                "posts": group_posts,
+                "posts_badges": [
+                    (post, tag_collections.build_badges(post.tags))
+                    for post in group_posts
+                ],
+                "comments_enabled": False,
+            },
+        )
+
+    from app.services.tag_collections import _read_collections_file, TagCollection
+    collections_data = _read_collections_file()
+    (output_dir / "collections").mkdir(exist_ok=True)
+    for entry in collections_data:
+        slug = str(entry.get("slug") or "").strip() or str(entry.get("name") or "").lower().replace(" ", "-")
+        name = str(entry.get("name") or "").strip()
+        if not name:
+            continue
+        color = entry.get("color")
+        if isinstance(color, str):
+            color = color.strip() or None
+        description = entry.get("description")
+        if isinstance(description, str):
+            description = description.strip() or None
+        collection = TagCollection(slug=slug, name=name, description=description, color=color)
+        tags = entry.get("tags") or []
+        if isinstance(tags, str):
+            tags = [tags]
+        matching_tags = [str(t).strip() for t in tags if isinstance(t, str) and t.strip()]
+        all_matching_posts = []
+        seen_slugs = set()
+        for tag in matching_tags:
+            for post in markdown_loader.list_posts_by_tag(tag):
+                if post.slug not in seen_slugs:
+                    all_matching_posts.append(post)
+                    seen_slugs.add(post.slug)
+        all_matching_posts.sort(key=lambda p: p.date, reverse=True)
+        render_template(
+            env,
+            "collection.html",
+            output_dir / "collections" / slug / "index.html",
+            {
+                "request": request,
+                "collection": collection,
+                "posts": all_matching_posts,
+                "posts_badges": [
+                    (post, tag_collections.build_badges(post.tags))
+                    for post in all_matching_posts
+                ],
                 "comments_enabled": False,
             },
         )
@@ -148,6 +204,7 @@ def build_site(output_dir: Path, base_url: str) -> None:
                 "comments": [],
                 "form_error": None,
                 "comments_enabled": False,
+                "tag_badges": tag_collections.build_badges(post.tags),
             },
         )
 

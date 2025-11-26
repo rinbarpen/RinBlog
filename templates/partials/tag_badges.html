@@ -1,0 +1,28 @@
+{% if badges %}
+  <ul class="tag-badges">
+    {% for badge in badges %}
+      {% set collection = badge.collection %}
+      <li class="tag-badge" {% if collection and collection.color %}style="--tag-color: {{ collection.color }}"{% endif %}>
+        {% if collection %}
+          <a href="{{ url_for('collection_posts', collection_slug=collection.slug) }}" class="tag-link">
+            <span class="tag-label">
+              {{ badge.label }}
+              {% if collection.name != badge.tag %}
+                <span class="tag-original">({{ badge.tag }})</span>
+              {% endif %}
+            </span>
+            {% if collection.description %}
+              <span class="tag-description">{{ collection.description }}</span>
+            {% endif %}
+          </a>
+        {% else %}
+          <span class="tag-label">
+            {{ badge.label }}
+          </span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
+
+

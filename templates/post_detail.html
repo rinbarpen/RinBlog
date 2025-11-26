@@ -13,6 +13,9 @@
         {% endif %}
       </p>
     </header>
+    {% if tag_badges is defined %}
+      {% include "partials/tag_badges.html" with context %}
+    {% endif %}
     <div class="markdown-body">
       {{ post.content_html | safe }}
     </div>

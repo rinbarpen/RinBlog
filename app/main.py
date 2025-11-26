@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .database import init_db
 from .routers import comments, pages
-from .services import markdown_loader
+from .services import markdown_loader, tag_collections
 
 
 app = FastAPI(title="RinBlog")
@@ -18,6 +18,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 def startup() -> None:
     init_db()
     markdown_loader.refresh_cache()
+    tag_collections.refresh()
 
 
 @app.get("/health")
