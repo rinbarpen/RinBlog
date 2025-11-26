@@ -19,6 +19,7 @@ class BlogPost:
     group_description: Optional[str] = None
     tags: List[str] = field(default_factory=list)
     is_daily: bool = False
+    lang: str = "en"
 
     @property
     def display_date(self) -> str:

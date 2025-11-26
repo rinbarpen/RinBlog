@@ -325,6 +325,32 @@ h2 {
   opacity: 0.85;
 }
 
+.lang-switcher {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lang-current {
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.lang-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: opacity 0.2s ease;
+}
+
+.lang-link:hover {
+  opacity: 0.7;
+}
+
 @media (max-width: 760px) {
   main.container {
     padding: 1.6rem;

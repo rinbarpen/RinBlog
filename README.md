@@ -43,6 +43,14 @@ collections:
 - 文章 front matter 中出现的标签会自动匹配集合并在页面上显示彩色徽标。
 - 点击标签徽标可查看该集合下的所有相关文章（访问 `/collections/<collection_slug>`）。
 
+### 多语言支持
+
+- 在文章 front matter 中添加 `lang: en` 或 `lang: zh` 来指定文章语言。
+- 默认语言为 `en`（英语），支持的语言包括：`en`（英语）、`zh`（中文）。
+- 使用导航栏右上角的语言切换器可以在不同语言版本之间切换。
+- 切换语言后，页面会只显示对应语言的文章。
+- 示例：`welcome-to-rinblog.md`（英文）和 `welcome-to-rinblog-zh.md`（中文）是同一篇文章的不同语言版本。
+
 ## 测试
 
 ```bash

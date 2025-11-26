@@ -1,0 +1,13 @@
+{% if available_langs is defined and current_lang is defined %}
+  <div class="lang-switcher">
+    {% for lang_code in available_langs %}
+      {% set lang_name = 'English' if lang_code == 'en' else '中文' %}
+      {% if lang_code == current_lang %}
+        <span class="lang-current">{{ lang_name }}</span>
+      {% else %}
+        <a href="{{ request.url.path }}?lang={{ lang_code }}" class="lang-link">{{ lang_name }}</a>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}
+

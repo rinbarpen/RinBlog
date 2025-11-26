@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ current_lang if current_lang is defined else 'en' }}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -10,10 +10,11 @@
   <body>
     <header class="site-header">
       <div class="container">
-        <h1><a href="{{ url_for('homepage') }}">🖊 RinBlog</a></h1>
+        <h1><a href="{{ url_for('homepage') }}?lang={{ current_lang if current_lang is defined else 'en' }}">🖊 RinBlog</a></h1>
         <nav>
-          <a href="{{ url_for('homepage') }}">Home</a>
-          <a href="{{ url_for('daily_posts') }}">Daily</a>
+          <a href="{{ url_for('homepage') }}?lang={{ current_lang if current_lang is defined else 'en' }}">Home</a>
+          <a href="{{ url_for('daily_posts') }}?lang={{ current_lang if current_lang is defined else 'en' }}">Daily</a>
+          {% include "partials/lang_switcher.html" with context %}
         </nav>
       </div>
     </header>

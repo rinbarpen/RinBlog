@@ -18,7 +18,7 @@ import sys
 
 sys.path.insert(0, str(BASE_DIR))
 
-from app.services import markdown_loader, tag_collections
+from app.services import markdown_loader, i18n, tag_collections
 TEMPLATES_DIR = BASE_DIR / "templates"
 STATIC_DIR = BASE_DIR / "static"
 DEFAULT_OUTPUT = BASE_DIR / "site"
@@ -99,56 +99,71 @@ def build_site(output_dir: Path, base_url: str) -> None:
     ensure_output_dir(output_dir)
 
     posts = markdown_loader.list_posts(include_daily=True)
-    regular_posts = [post for post in posts if not post.is_daily]
-    regular_with_badges = [(post, tag_collections.build_badges(post.tags)) for post in regular_posts]
     groups = markdown_loader.list_groups()
-    latest_daily = markdown_loader.get_latest_daily()
-    daily_posts = markdown_loader.list_daily_posts()
-    daily_with_badges = [(post, tag_collections.build_badges(post.tags)) for post in daily_posts]
+    
+    for lang in i18n.SUPPORTED_LANGUAGES:
+        regular_posts = [post for post in posts if not post.is_daily]
+        regular_posts = markdown_loader.filter_by_language(regular_posts, lang)
+        regular_with_badges = [(post, tag_collections.build_badges(post.tags)) for post in regular_posts]
+        all_daily = markdown_loader.list_daily_posts()
+        latest_daily = next((p for p in all_daily if p.lang == lang), None) or (all_daily[0] if all_daily else None)
+        daily_posts = markdown_loader.filter_by_language(all_daily, lang)
+        daily_with_badges = [(post, tag_collections.build_badges(post.tags)) for post in daily_posts]
 
-    render_template(
-        env,
-        "index.html",
-        output_dir / "index.html",
-        {
-            "request": request,
-            "posts": regular_posts,
-            "posts_badges": regular_with_badges,
-            "groups": groups,
-            "latest_daily": latest_daily,
-            "comments_enabled": False,
-        },
-    )
-
-    render_template(
-        env,
-        "daily.html",
-        output_dir / "daily" / "index.html",
-        {
-            "request": request,
-            "posts": daily_posts,
-            "posts_badges": daily_with_badges,
-            "comments_enabled": False,
-        },
-    )
-
-    for group in groups:
-        group_posts = markdown_loader.list_posts_by_group(group.slug)
+        output_path = output_dir / "index.html" if lang == i18n.DEFAULT_LANGUAGE else output_dir / f"index-{lang}.html"
         render_template(
             env,
-            "group.html",
-            output_dir / "groups" / group.slug / "index.html",
+            "index.html",
+            output_path,
             {
                 "request": request,
-                "group": group,
-                "posts": group_posts,
-                "posts_badges": [
-                    (post, tag_collections.build_badges(post.tags))
-                    for post in group_posts
-                ],
+                "posts": regular_posts,
+                "posts_badges": regular_with_badges,
+                "groups": groups,
+                "latest_daily": latest_daily,
                 "comments_enabled": False,
+                "current_lang": lang,
+                "available_langs": i18n.SUPPORTED_LANGUAGES,
             },
         )
+
+        daily_output = output_dir / "daily" / ("index.html" if lang == i18n.DEFAULT_LANGUAGE else f"index-{lang}.html")
+        render_template(
+            env,
+            "daily.html",
+            daily_output,
+            {
+                "request": request,
+                "posts": daily_posts,
+                "posts_badges": daily_with_badges,
+                "comments_enabled": False,
+                "current_lang": lang,
+                "available_langs": i18n.SUPPORTED_LANGUAGES,
+            },
+        )
+
+    for group in groups:
+        all_group_posts = markdown_loader.list_posts_by_group(group.slug)
+        for lang in i18n.SUPPORTED_LANGUAGES:
+            group_posts = markdown_loader.filter_by_language(all_group_posts, lang)
+            group_output = output_dir / "groups" / group.slug / ("index.html" if lang == i18n.DEFAULT_LANGUAGE else f"index-{lang}.html")
+            render_template(
+                env,
+                "group.html",
+                group_output,
+                {
+                    "request": request,
+                    "group": group,
+                    "posts": group_posts,
+                    "posts_badges": [
+                        (post, tag_collections.build_badges(post.tags))
+                        for post in group_posts
+                    ],
+                    "comments_enabled": False,
+                    "current_lang": lang,
+                    "available_langs": i18n.SUPPORTED_LANGUAGES,
+                },
+            )
 
     from app.services.tag_collections import _read_collections_file, TagCollection
     collections_data = _read_collections_file()
@@ -177,27 +192,33 @@ def build_site(output_dir: Path, base_url: str) -> None:
                     all_matching_posts.append(post)
                     seen_slugs.add(post.slug)
         all_matching_posts.sort(key=lambda p: p.date, reverse=True)
-        render_template(
-            env,
-            "collection.html",
-            output_dir / "collections" / slug / "index.html",
-            {
-                "request": request,
-                "collection": collection,
-                "posts": all_matching_posts,
-                "posts_badges": [
-                    (post, tag_collections.build_badges(post.tags))
-                    for post in all_matching_posts
-                ],
-                "comments_enabled": False,
-            },
-        )
+        for lang in i18n.SUPPORTED_LANGUAGES:
+            filtered_posts = markdown_loader.filter_by_language(all_matching_posts, lang)
+            collection_output = output_dir / "collections" / slug / ("index.html" if lang == i18n.DEFAULT_LANGUAGE else f"index-{lang}.html")
+            render_template(
+                env,
+                "collection.html",
+                collection_output,
+                {
+                    "request": request,
+                    "collection": collection,
+                    "posts": filtered_posts,
+                    "posts_badges": [
+                        (post, tag_collections.build_badges(post.tags))
+                        for post in filtered_posts
+                    ],
+                    "comments_enabled": False,
+                    "current_lang": lang,
+                    "available_langs": i18n.SUPPORTED_LANGUAGES,
+                },
+            )
 
     for post in posts:
+        post_output = output_dir / "posts" / post.slug / ("index.html" if post.lang == i18n.DEFAULT_LANGUAGE else f"index-{post.lang}.html")
         render_template(
             env,
             "post_detail.html",
-            output_dir / "posts" / post.slug / "index.html",
+            post_output,
             {
                 "request": request,
                 "post": post,
@@ -205,6 +226,8 @@ def build_site(output_dir: Path, base_url: str) -> None:
                 "form_error": None,
                 "comments_enabled": False,
                 "tag_badges": tag_collections.build_badges(post.tags),
+                "current_lang": post.lang,
+                "available_langs": i18n.SUPPORTED_LANGUAGES,
             },
         )
 

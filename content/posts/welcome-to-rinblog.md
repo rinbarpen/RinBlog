@@ -9,6 +9,7 @@ summary: Introducing the RinBlog project and what to expect from upcoming posts.
 tags:
   - intro
   - project
+lang: en
 ---
 
 Thank you for visiting **RinBlog**! This space is dedicated to sharing news, learnings, and small experiments built with FastAPI and Python.

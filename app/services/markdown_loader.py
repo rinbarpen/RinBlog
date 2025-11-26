@@ -124,6 +124,11 @@ def list_posts_by_tag(tag: str) -> List[BlogPost]:
     return matching
 
 
+def filter_by_language(posts: List[BlogPost], lang: str) -> List[BlogPost]:
+    """Filter posts by language code."""
+    return [post for post in posts if post.lang == lang]
+
+
 def _clear_memory() -> None:
     global _posts_index, _ordered_posts, _groups_index, _posts_by_group, _daily_posts
     _posts_index = {}
@@ -173,6 +178,9 @@ def _load_post(path: Path) -> Optional[BlogPost]:
 
     tags = _normalize_tags(meta.get("tags"))
     is_daily = bool(meta.get("daily")) or (meta.get("type") == "daily")
+    
+    from app.services.i18n import normalize_lang
+    lang = normalize_lang(meta.get("lang") or meta.get("language"))
 
     return BlogPost(
         slug=slug,
@@ -187,6 +195,7 @@ def _load_post(path: Path) -> Optional[BlogPost]:
         group_description=group_description,
         tags=tags,
         is_daily=is_daily,
+        lang=lang,
     )
 
 

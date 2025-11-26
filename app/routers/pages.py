@@ -5,10 +5,12 @@ from sqlmodel import Session
 
 from typing import List, Optional
 
+from fastapi import Query
+
 from app.database import get_session
 from app.models.post import BlogPost
 from app.services import markdown_loader, tag_collections
-from app.services import comment_service
+from app.services import comment_service, i18n
 from app.services.tag_collections import TagCollection, _read_collections_file
 
 
@@ -16,11 +18,18 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
+def get_language(lang: Optional[str] = Query(None, alias="lang")) -> str:
+    """Get current language from query parameter or default."""
+    return i18n.normalize_lang(lang)
+
+
 @router.get("/", response_class=HTMLResponse, name="homepage")
-def homepage(request: Request) -> HTMLResponse:
-    posts = markdown_loader.list_posts(include_daily=False)
+def homepage(request: Request, lang: str = Depends(get_language)) -> HTMLResponse:
+    all_posts = markdown_loader.list_posts(include_daily=False)
+    posts = markdown_loader.filter_by_language(all_posts, lang)
     groups = markdown_loader.list_groups()
-    latest_daily = markdown_loader.get_latest_daily()
+    all_daily = markdown_loader.list_daily_posts()
+    latest_daily = next((p for p in all_daily if p.lang == lang), None) or (all_daily[0] if all_daily else None)
 
     posts_with_badges = [
         (post, tag_collections.build_badges(post.tags))
@@ -34,16 +43,19 @@ def homepage(request: Request) -> HTMLResponse:
             "posts_badges": posts_with_badges,
             "groups": groups,
             "latest_daily": latest_daily,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
     )
 
 
 @router.get("/groups/{group_slug}", response_class=HTMLResponse, name="group_posts")
-def group_posts(request: Request, group_slug: str) -> HTMLResponse:
+def group_posts(request: Request, group_slug: str, lang: str = Depends(get_language)) -> HTMLResponse:
     group = markdown_loader.get_group_by_slug(group_slug)
     if group is None:
         raise HTTPException(status_code=404, detail="Group not found")
-    posts = markdown_loader.list_posts_by_group(group_slug)
+    all_posts = markdown_loader.list_posts_by_group(group_slug)
+    posts = markdown_loader.filter_by_language(all_posts, lang)
     posts_badges = [
         (post, tag_collections.build_badges(post.tags))
         for post in posts
@@ -55,6 +67,8 @@ def group_posts(request: Request, group_slug: str) -> HTMLResponse:
             "group": group,
             "posts": posts,
             "posts_badges": posts_badges,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
     )
 
@@ -64,6 +78,7 @@ def post_detail(
     request: Request,
     slug: str,
     session: Session = Depends(get_session),
+    lang: str = Depends(get_language),
 ) -> HTMLResponse:
     post = markdown_loader.get_post(slug)
     if post is None:
@@ -80,13 +95,16 @@ def post_detail(
             "form_error": None,
             "comments_enabled": True,
             "tag_badges": tag_badges,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
     )
 
 
 @router.get("/daily", response_class=HTMLResponse, name="daily_posts")
-def daily_posts(request: Request) -> HTMLResponse:
-    posts = markdown_loader.list_daily_posts()
+def daily_posts(request: Request, lang: str = Depends(get_language)) -> HTMLResponse:
+    all_posts = markdown_loader.list_daily_posts()
+    posts = markdown_loader.filter_by_language(all_posts, lang)
     posts_with_badges = [
         (post, tag_collections.build_badges(post.tags))
         for post in posts
@@ -97,12 +115,14 @@ def daily_posts(request: Request) -> HTMLResponse:
             "request": request,
             "posts": posts,
             "posts_badges": posts_with_badges,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
     )
 
 
 @router.get("/collections/{collection_slug}", response_class=HTMLResponse, name="collection_posts")
-def collection_posts(request: Request, collection_slug: str) -> HTMLResponse:
+def collection_posts(request: Request, collection_slug: str, lang: str = Depends(get_language)) -> HTMLResponse:
     collections_data = _read_collections_file()
     collection_info: Optional[TagCollection] = None
     matching_tags: List[str] = []
@@ -137,9 +157,10 @@ def collection_posts(request: Request, collection_slug: str) -> HTMLResponse:
                 seen_slugs.add(post.slug)
     
     all_matching_posts.sort(key=lambda p: p.date, reverse=True)
+    posts = markdown_loader.filter_by_language(all_matching_posts, lang)
     posts_with_badges = [
         (post, tag_collections.build_badges(post.tags))
-        for post in all_matching_posts
+        for post in posts
     ]
     
     return templates.TemplateResponse(
@@ -147,8 +168,10 @@ def collection_posts(request: Request, collection_slug: str) -> HTMLResponse:
         {
             "request": request,
             "collection": collection_info,
-            "posts": all_matching_posts,
+            "posts": posts,
             "posts_badges": posts_with_badges,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
     )
 
