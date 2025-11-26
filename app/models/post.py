@@ -20,6 +20,8 @@ class BlogPost:
     tags: List[str] = field(default_factory=list)
     is_daily: bool = False
     lang: str = "en"
+    column: Optional[str] = None
+    subcolumn: Optional[str] = None
 
     @property
     def display_date(self) -> str:

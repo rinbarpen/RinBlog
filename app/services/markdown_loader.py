@@ -15,7 +15,7 @@ from app.models.post import BlogPost, GroupSummary
 logger = logging.getLogger(__name__)
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-CONTENT_DIR = BASE_DIR / "content" / "posts"
+CONTENT_DIR = BASE_DIR / "content"
 
 _markdown = MarkdownIt("commonmark", {"html": True}).enable("table").enable("strikethrough").enable("fence")
 
@@ -24,11 +24,12 @@ _ordered_posts: List[BlogPost] = []
 _groups_index: Dict[str, GroupSummary] = {}
 _posts_by_group: Dict[str, List[BlogPost]] = {}
 _daily_posts: List[BlogPost] = []
+_columns_index: Dict[str, Dict[str, List[BlogPost]]] = {}  # column -> subcolumn -> posts
 
 
 def refresh_cache() -> None:
     """Load all markdown posts into memory."""
-    global _posts_index, _ordered_posts, _groups_index, _posts_by_group, _daily_posts
+    global _posts_index, _ordered_posts, _groups_index, _posts_by_group, _daily_posts, _columns_index
 
     if not CONTENT_DIR.exists():
         CONTENT_DIR.mkdir(parents=True, exist_ok=True)
@@ -37,8 +38,14 @@ def refresh_cache() -> None:
 
     posts: List[BlogPost] = []
     groups: Dict[str, GroupSummary] = {}
+    columns: Dict[str, Dict[str, List[BlogPost]]] = {}
 
-    for path in sorted(CONTENT_DIR.glob("*.md")):
+    # Recursively scan all .md files in content directory
+    for path in sorted(CONTENT_DIR.rglob("*.md")):
+        # Skip files in special directories like daily/2025
+        if "daily" in path.parts and path.parts[-2] not in ["daily"]:
+            continue
+            
         try:
             post = _load_post(path)
         except Exception as exc:  # pylint: disable=broad-except
@@ -48,7 +55,34 @@ def refresh_cache() -> None:
         if post is None:
             continue
 
+        # Extract column and subcolumn from path
+        # Path structure: content/专栏名/小专栏名/文章.md
+        relative_path = path.relative_to(CONTENT_DIR)
+        parts = relative_path.parts
+        
+        if len(parts) >= 3:  # 专栏/小专栏/文章.md
+            post.column = parts[0]
+            post.subcolumn = parts[1]
+        elif len(parts) == 2:  # 专栏/文章.md
+            post.column = parts[0]
+            post.subcolumn = None
+        # else: 根目录下的文件，column 和 subcolumn 为 None
+
         posts.append(post)
+
+        # Index by column/subcolumn
+        if post.column:
+            if post.column not in columns:
+                columns[post.column] = {}
+            if post.subcolumn:
+                if post.subcolumn not in columns[post.column]:
+                    columns[post.column][post.subcolumn] = []
+                columns[post.column][post.subcolumn].append(post)
+            else:
+                # Posts directly under column
+                if "_root" not in columns[post.column]:
+                    columns[post.column]["_root"] = []
+                columns[post.column]["_root"].append(post)
 
         if post.group_slug:
             summary = groups.get(post.group_slug)
@@ -77,6 +111,7 @@ def refresh_cache() -> None:
     _posts_by_group = grouped
 
     _groups_index = groups
+    _columns_index = columns
 
 
 def list_posts(*, include_daily: bool = False) -> List[BlogPost]:
@@ -129,13 +164,45 @@ def filter_by_language(posts: List[BlogPost], lang: str) -> List[BlogPost]:
     return [post for post in posts if post.lang == lang]
 
 
+def list_columns() -> List[str]:
+    """List all column names."""
+    return sorted(_columns_index.keys())
+
+
+def list_subcolumns(column: str) -> List[str]:
+    """List all subcolumn names for a given column."""
+    if column not in _columns_index:
+        return []
+    subcolumns = [sc for sc in _columns_index[column].keys() if sc != "_root"]
+    return sorted(subcolumns)
+
+
+def list_posts_by_column(column: str, subcolumn: Optional[str] = None) -> List[BlogPost]:
+    """List posts in a column, optionally filtered by subcolumn."""
+    if column not in _columns_index:
+        return []
+    
+    if subcolumn:
+        if subcolumn in _columns_index[column]:
+            return list(_columns_index[column][subcolumn])
+        return []
+    
+    # Return all posts in the column (from all subcolumns)
+    all_posts: List[BlogPost] = []
+    for subcol_posts in _columns_index[column].values():
+        all_posts.extend(subcol_posts)
+    all_posts.sort(key=lambda p: p.date, reverse=True)
+    return all_posts
+
+
 def _clear_memory() -> None:
-    global _posts_index, _ordered_posts, _groups_index, _posts_by_group, _daily_posts
+    global _posts_index, _ordered_posts, _groups_index, _posts_by_group, _daily_posts, _columns_index
     _posts_index = {}
     _ordered_posts = []
     _groups_index = {}
     _posts_by_group = {}
     _daily_posts = []
+    _columns_index = {}
 
 
 def _load_post(path: Path) -> Optional[BlogPost]:

@@ -30,6 +30,7 @@ def homepage(request: Request, lang: str = Depends(get_language)) -> HTMLRespons
     groups = markdown_loader.list_groups()
     all_daily = markdown_loader.list_daily_posts()
     latest_daily = next((p for p in all_daily if p.lang == lang), None) or (all_daily[0] if all_daily else None)
+    columns = markdown_loader.list_columns()
 
     posts_with_badges = [
         (post, tag_collections.build_badges(post.tags))
@@ -43,6 +44,7 @@ def homepage(request: Request, lang: str = Depends(get_language)) -> HTMLRespons
             "posts_badges": posts_with_badges,
             "groups": groups,
             "latest_daily": latest_daily,
+            "columns": columns,
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -168,6 +170,57 @@ def collection_posts(request: Request, collection_slug: str, lang: str = Depends
         {
             "request": request,
             "collection": collection_info,
+            "posts": posts,
+            "posts_badges": posts_with_badges,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
+        },
+    )
+
+
+@router.get("/columns/{column}", response_class=HTMLResponse, name="column_posts")
+def column_posts(request: Request, column: str, lang: str = Depends(get_language)) -> HTMLResponse:
+    """List posts in a column."""
+    all_posts = markdown_loader.list_posts_by_column(column)
+    posts = markdown_loader.filter_by_language(all_posts, lang)
+    subcolumns = markdown_loader.list_subcolumns(column)
+    
+    posts_with_badges = [
+        (post, tag_collections.build_badges(post.tags))
+        for post in posts
+    ]
+    
+    return templates.TemplateResponse(
+        "column.html",
+        {
+            "request": request,
+            "column": column,
+            "subcolumns": subcolumns,
+            "posts": posts,
+            "posts_badges": posts_with_badges,
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
+        },
+    )
+
+
+@router.get("/columns/{column}/{subcolumn}", response_class=HTMLResponse, name="subcolumn_posts")
+def subcolumn_posts(request: Request, column: str, subcolumn: str, lang: str = Depends(get_language)) -> HTMLResponse:
+    """List posts in a subcolumn."""
+    all_posts = markdown_loader.list_posts_by_column(column, subcolumn)
+    posts = markdown_loader.filter_by_language(all_posts, lang)
+    
+    posts_with_badges = [
+        (post, tag_collections.build_badges(post.tags))
+        for post in posts
+    ]
+    
+    return templates.TemplateResponse(
+        "subcolumn.html",
+        {
+            "request": request,
+            "column": column,
+            "subcolumn": subcolumn,
             "posts": posts,
             "posts_badges": posts_with_badges,
             "current_lang": lang,

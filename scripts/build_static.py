@@ -49,6 +49,13 @@ def build_url_factory(base_url: str) -> Callable[[str, Dict[str, str]], str]:
         elif name == "collection_posts":
             slug = params["collection_slug"]
             path = f"collections/{slug}/"
+        elif name == "column_posts":
+            column = params["column"]
+            path = f"columns/{column}/"
+        elif name == "subcolumn_posts":
+            column = params["column"]
+            subcolumn = params["subcolumn"]
+            path = f"columns/{column}/{subcolumn}/"
         elif name == "static":
             static_path = params.get("path", "")
             if static_path.startswith("/"):
@@ -100,6 +107,7 @@ def build_site(output_dir: Path, base_url: str) -> None:
 
     posts = markdown_loader.list_posts(include_daily=True)
     groups = markdown_loader.list_groups()
+    columns = markdown_loader.list_columns()
     
     for lang in i18n.SUPPORTED_LANGUAGES:
         regular_posts = [post for post in posts if not post.is_daily]
@@ -121,6 +129,7 @@ def build_site(output_dir: Path, base_url: str) -> None:
                 "posts_badges": regular_with_badges,
                 "groups": groups,
                 "latest_daily": latest_daily,
+                "columns": columns,
                 "comments_enabled": False,
                 "current_lang": lang,
                 "available_langs": i18n.SUPPORTED_LANGUAGES,
@@ -164,6 +173,58 @@ def build_site(output_dir: Path, base_url: str) -> None:
                     "available_langs": i18n.SUPPORTED_LANGUAGES,
                 },
             )
+
+    # Generate column and subcolumn pages
+    for column in columns:
+        all_column_posts = markdown_loader.list_posts_by_column(column)
+        subcolumns = markdown_loader.list_subcolumns(column)
+        
+        for lang in i18n.SUPPORTED_LANGUAGES:
+            column_posts = markdown_loader.filter_by_language(all_column_posts, lang)
+            column_output = output_dir / "columns" / column / ("index.html" if lang == i18n.DEFAULT_LANGUAGE else f"index-{lang}.html")
+            render_template(
+                env,
+                "column.html",
+                column_output,
+                {
+                    "request": request,
+                    "column": column,
+                    "subcolumns": subcolumns,
+                    "posts": column_posts,
+                    "posts_badges": [
+                        (post, tag_collections.build_badges(post.tags))
+                        for post in column_posts
+                    ],
+                    "comments_enabled": False,
+                    "current_lang": lang,
+                    "available_langs": i18n.SUPPORTED_LANGUAGES,
+                },
+            )
+        
+        # Generate subcolumn pages
+        for subcolumn in subcolumns:
+            all_subcolumn_posts = markdown_loader.list_posts_by_column(column, subcolumn)
+            for lang in i18n.SUPPORTED_LANGUAGES:
+                subcolumn_posts = markdown_loader.filter_by_language(all_subcolumn_posts, lang)
+                subcolumn_output = output_dir / "columns" / column / subcolumn / ("index.html" if lang == i18n.DEFAULT_LANGUAGE else f"index-{lang}.html")
+                render_template(
+                    env,
+                    "subcolumn.html",
+                    subcolumn_output,
+                    {
+                        "request": request,
+                        "column": column,
+                        "subcolumn": subcolumn,
+                        "posts": subcolumn_posts,
+                        "posts_badges": [
+                            (post, tag_collections.build_badges(post.tags))
+                            for post in subcolumn_posts
+                        ],
+                        "comments_enabled": False,
+                        "current_lang": lang,
+                        "available_langs": i18n.SUPPORTED_LANGUAGES,
+                    },
+                )
 
     from app.services.tag_collections import _read_collections_file, TagCollection
     collections_data = _read_collections_file()

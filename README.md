@@ -18,7 +18,10 @@ uv run uvicorn app.main:app --reload
 
 ### 内容与评论存储
 
-- Markdown 文章位于 `content/posts/`。
+- Markdown 文章支持层级目录结构：`content/专栏名/小专栏名/文章.md`
+  - 例如：`content/技术/前端/React入门.md` 会创建一个"技术"专栏下的"前端"小专栏
+  - 也可以直接在专栏下放置文章：`content/技术/文章.md`
+  - 根目录下的文章（如 `content/文章.md`）不归属于任何专栏
 - 评论使用 SQLite，默认路径 `data/rinblog.db`，可通过环境变量覆盖：
 
 ```bash

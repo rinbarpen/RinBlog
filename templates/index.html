@@ -62,6 +62,23 @@
     {% endif %}
   </section>
 
+  {% if columns %}
+    <section class="columns">
+      <div class="section-heading">
+        <h2>Columns</h2>
+      </div>
+      <ul class="column-items">
+        {% for column in columns %}
+          <li>
+            <a href="{{ url_for('column_posts', column=column) }}?lang={{ current_lang if current_lang is defined else 'en' }}">
+              <span class="column-name">{{ column }}</span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+
   <section class="groups">
     <div class="section-heading">
       <h2>Browse by Group</h2>
@@ -70,7 +87,7 @@
       <ul class="group-items">
         {% for group in groups %}
           <li>
-            <a href="{{ url_for('group_posts', group_slug=group.slug) }}">
+            <a href="{{ url_for('group_posts', group_slug=group.slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">
               <span class="group-name">{{ group.name }}</span>
               <span class="group-count">{{ group.post_count }} posts</span>
             </a>

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}{{ column }} / {{ subcolumn }} - RinBlog{% endblock %}
+
+{% block content %}
+  <section class="subcolumn-header">
+    <nav class="breadcrumb">
+      <a href="{{ url_for('column_posts', column=column) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ column }}</a>
+      <span> / </span>
+      <span>{{ subcolumn }}</span>
+    </nav>
+    <h2>{{ subcolumn }}</h2>
+  </section>
+
+  <section class="post-list">
+    {% if posts %}
+      <ul class="post-items">
+        {% if posts_badges is defined %}
+          {% for post, badges in posts_badges %}
+            <li>
+              <article>
+                <h3><a href="{{ url_for('post_detail', slug=post.slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.title }}</a></h3>
+                <p class="meta">
+                  {{ post.display_date }}
+                  {% if post.group_label %}
+                    · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.group_label }}</a>
+                  {% endif %}
+                </p>
+                <p class="summary">{{ post.summary }}</p>
+                {% set tag_badges = badges %}
+                {% include "partials/tag_badges.html" with context %}
+              </article>
+            </li>
+          {% endfor %}
+        {% else %}
+          {% for post in posts %}
+            {% set badges = [] %}
+            <li>
+              <article>
+                <h3><a href="{{ url_for('post_detail', slug=post.slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.title }}</a></h3>
+                <p class="meta">
+                  {{ post.display_date }}
+                  {% if post.group_label %}
+                    · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.group_label }}</a>
+                  {% endif %}
+                </p>
+                <p class="summary">{{ post.summary }}</p>
+                {% include "partials/tag_badges.html" with context %}
+              </article>
+            </li>
+          {% endfor %}
+        {% endif %}
+      </ul>
+    {% else %}
+      <p>No posts found in this subcolumn.</p>
+    {% endif %}
+  </section>
+{% endblock %}
+

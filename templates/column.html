@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Column: {{ column }} - RinBlog{% endblock %}
+
+{% block content %}
+  <section class="column-header">
+    <h2>{{ column }}</h2>
+    {% if subcolumns %}
+      <div class="subcolumns-nav">
+        <h3>Subcolumns</h3>
+        <ul class="subcolumn-items">
+          {% for subcol in subcolumns %}
+            <li>
+              <a href="{{ url_for('subcolumn_posts', column=column, subcolumn=subcol) }}?lang={{ current_lang if current_lang is defined else 'en' }}">
+                {{ subcol }}
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </section>
+
+  <section class="post-list">
+    {% if posts %}
+      <ul class="post-items">
+        {% if posts_badges is defined %}
+          {% for post, badges in posts_badges %}
+            <li>
+              <article>
+                <h3><a href="{{ url_for('post_detail', slug=post.slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.title }}</a></h3>
+                <p class="meta">
+                  {{ post.display_date }}
+                  {% if post.subcolumn %}
+                    · <a href="{{ url_for('subcolumn_posts', column=column, subcolumn=post.subcolumn) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.subcolumn }}</a>
+                  {% endif %}
+                  {% if post.group_label %}
+                    · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.group_label }}</a>
+                  {% endif %}
+                </p>
+                <p class="summary">{{ post.summary }}</p>
+                {% set tag_badges = badges %}
+                {% include "partials/tag_badges.html" with context %}
+              </article>
+            </li>
+          {% endfor %}
+        {% else %}
+          {% for post in posts %}
+            {% set badges = [] %}
+            <li>
+              <article>
+                <h3><a href="{{ url_for('post_detail', slug=post.slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.title }}</a></h3>
+                <p class="meta">
+                  {{ post.display_date }}
+                  {% if post.subcolumn %}
+                    · <a href="{{ url_for('subcolumn_posts', column=column, subcolumn=post.subcolumn) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.subcolumn }}</a>
+                  {% endif %}
+                  {% if post.group_label %}
+                    · <a href="{{ url_for('group_posts', group_slug=post.group_slug) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ post.group_label }}</a>
+                  {% endif %}
+                </p>
+                <p class="summary">{{ post.summary }}</p>
+                {% include "partials/tag_badges.html" with context %}
+              </article>
+            </li>
+          {% endfor %}
+        {% endif %}
+      </ul>
+    {% else %}
+      <p>No posts found in this column.</p>
+    {% endif %}
+  </section>
+{% endblock %}
+
