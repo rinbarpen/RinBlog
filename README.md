@@ -65,9 +65,9 @@ uv run python scripts/build_static.py --base-url your-repo-name
 
 ### 一键部署
 
-点击下方按钮即可在 Vercel 上一键部署（将 `<GITHUB_USER>` 替换为你的 GitHub 用户名）：
+点击下方按钮即可在 Vercel 上一键部署：
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/<GITHUB_USER>/RinBlog&env=RINBLOG_DB_PATH&envDescription=SQLite%20path%20for%20comments&envValue=/tmp/rinblog.db&project-name=rinblog&repository-name=RinBlog)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/rinbarpen/RinBlog&env=RINBLOG_DB_PATH&envDescription=SQLite%20path%20for%20comments&envValue=/tmp/rinblog.db&project-name=rinblog&repository-name=RinBlog)
 
 ### 手动配置
 
