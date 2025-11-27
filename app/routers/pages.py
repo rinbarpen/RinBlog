@@ -45,6 +45,7 @@ def homepage(request: Request, lang: str = Depends(get_language)) -> HTMLRespons
             "groups": groups,
             "latest_daily": latest_daily,
             "columns": columns,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -69,6 +70,7 @@ def group_posts(request: Request, group_slug: str, lang: str = Depends(get_langu
             "group": group,
             "posts": posts,
             "posts_badges": posts_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -97,6 +99,7 @@ def post_detail(
             "form_error": None,
             "comments_enabled": True,
             "tag_badges": tag_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -117,6 +120,7 @@ def daily_posts(request: Request, lang: str = Depends(get_language)) -> HTMLResp
             "request": request,
             "posts": posts,
             "posts_badges": posts_with_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -172,6 +176,38 @@ def collection_posts(request: Request, collection_slug: str, lang: str = Depends
             "collection": collection_info,
             "posts": posts,
             "posts_badges": posts_with_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
+            "current_lang": lang,
+            "available_langs": i18n.SUPPORTED_LANGUAGES,
+        },
+    )
+
+
+@router.get("/tags", response_class=HTMLResponse, name="tag_posts")
+def tag_posts(
+    request: Request,
+    tag: str = Query(..., min_length=1),
+    lang: str = Depends(get_language),
+) -> HTMLResponse:
+    normalized_tag = tag.strip()
+    if not normalized_tag:
+        raise HTTPException(status_code=400, detail="Tag cannot be empty")
+
+    all_posts = markdown_loader.list_posts_by_tag(normalized_tag)
+    posts = markdown_loader.filter_by_language(all_posts, lang)
+    posts_badges = [
+        (post, tag_collections.build_badges(post.tags))
+        for post in posts
+    ]
+
+    return templates.TemplateResponse(
+        "tag.html",
+        {
+            "request": request,
+            "tag_name": normalized_tag,
+            "posts": posts,
+            "posts_badges": posts_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -198,6 +234,7 @@ def column_posts(request: Request, column: str, lang: str = Depends(get_language
             "subcolumns": subcolumns,
             "posts": posts,
             "posts_badges": posts_with_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },
@@ -223,6 +260,7 @@ def subcolumn_posts(request: Request, column: str, subcolumn: str, lang: str = D
             "subcolumn": subcolumn,
             "posts": posts,
             "posts_badges": posts_with_badges,
+            "nav_structure": markdown_loader.get_navigation_structure(),
             "current_lang": lang,
             "available_langs": i18n.SUPPORTED_LANGUAGES,
         },

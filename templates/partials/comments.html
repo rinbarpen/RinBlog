@@ -11,6 +11,13 @@
                 <span class="meta">{{ comment.display_time }}</span>
               </header>
               <p>{{ comment.content }}</p>
+              {% if comment.image_urls %}
+                <div class="comment-images">
+                  {% for image_url in comment.image_urls %}
+                    <img src="{{ image_url }}" alt="Comment image" loading="lazy" class="comment-image">
+                  {% endfor %}
+                </div>
+              {% endif %}
             </article>
           </li>
         {% endfor %}
@@ -19,7 +26,7 @@
       <p>No comments yet. Be the first to share your thoughts!</p>
     {% endif %}
 
-    <form class="comment-form" method="post" action="{{ url_for('create_comment', slug=post.slug) }}">
+    <form class="comment-form" method="post" action="{{ url_for('create_comment', slug=post.slug) }}" enctype="multipart/form-data">
       {% if form_error %}
         <p class="form-error">{{ form_error }}</p>
       {% endif %}
@@ -30,6 +37,18 @@
       <label>
         Comment
         <textarea name="content" rows="4" required></textarea>
+      </label>
+      <label class="file-upload-label">
+        <input type="file" name="images" accept="image/*" multiple style="display: none;" />
+        <span class="file-upload-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span class="file-upload-text">Upload Images</span>
+        </span>
+        <span class="file-upload-count"></span>
       </label>
       <button type="submit">Post Comment</button>
     </form>

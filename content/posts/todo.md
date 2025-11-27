@@ -18,6 +18,19 @@ lang: en
 ### Movie
 
 ## World
+### Economics
+ - [ ] 微观经济学
+ - [ ] 宏观经济学
+ - [ ] 投资
+ - [ ] 基金
+ - [ ] 股票
+
+### 人文 
+ - [ ] 精神分析学
+ - [ ] 阳明心学
+ - [ ] 道德经
+ - [ ] 金刚经
+ - [ ] 资本论
 
 ## Tech
 ### AI
@@ -78,4 +91,4 @@ lang: en
  - [ ] Rust
  - [ ] Optimization Policies
  - [ ] Linux
- - [ ] Tech is a Big Rubbish. Especially, Computer Science & Silly Programmer!
+ - [ ] Tech is a Big Rubbish.

@@ -60,13 +60,25 @@ collections:
 uv run pytest
 ```
 
-## 构建静态站点（GitHub Pages）
+## 构建静态站点（GitHub Pages / Cloudflare Pages）
 
 ```bash
-uv run python scripts/build_static.py --base-url your-repo-name
+uv run python scripts/build_static.py
 ```
 
-生成内容输出到 `site/`。若部署到顶级域名，可省略 `--base-url`。
+生成内容输出到 `site/`。若部署到非顶级域名，可使用 `--base-url` 参数。
+
+### Cloudflare Pages 部署
+
+已添加 GitHub Actions 工作流 `.github/workflows/deploy-cloudflare.yml`。
+
+1.  将代码推送到 GitHub。
+2.  在 Cloudflare Dashboard 中创建一个新的 Pages 项目，连接你的 GitHub 仓库。
+3.  或者使用 GitHub Actions 自动部署（需要在 Cloudflare 获取 Account ID 和 API Token 并配置到 GitHub Secrets）。
+    *   `CLOUDFLARE_ACCOUNT_ID`
+    *   `CLOUDFLARE_API_TOKEN`
+
+**注意**：部署到 Cloudflare Pages 等静态托管服务时，评论功能（动态 API）将不可用。
 
 ### GitHub Pages 工作流
 
@@ -90,4 +102,3 @@ RINBLOG_DB_PATH=/tmp/rinblog.db
 ```
 
 3. 其余保持默认，Vercel 会根据 `vercel.json` 调用 `api/index.py` 运行 FastAPI 应用。
-

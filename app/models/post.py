@@ -22,6 +22,7 @@ class BlogPost:
     lang: str = "en"
     column: Optional[str] = None
     subcolumn: Optional[str] = None
+    pinned: bool = False
 
     @property
     def display_date(self) -> str:

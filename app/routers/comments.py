@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
+from typing import List, Optional
 
 from app.database import get_session
 from app.services import comment_service, markdown_loader
@@ -13,20 +14,27 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-@router.post("/posts/{slug}/comments", name="create_comment")
+@router.post("/posts/{slug}/comments", name="create_comment", response_model=None)
 def create_comment(
     request: Request,
     slug: str,
     nickname: str = Form(default=""),
     content: str = Form(...),
+    images: Optional[List[UploadFile]] = File(default=None),
     session: Session = Depends(get_session),
-) -> HTMLResponse | RedirectResponse:
+):
     post = markdown_loader.get_post(slug)
     if post is None:
         raise HTTPException(status_code=404, detail="Post not found")
 
     try:
-        comment_service.create_comment(session, slug=slug, nickname=nickname, content=content)
+        comment_service.create_comment(
+            session, 
+            slug=slug, 
+            nickname=nickname, 
+            content=content,
+            images=images
+        )
     except ValueError as exc:
         comments = comment_service.list_comment_views(session, slug)
         return templates.TemplateResponse(

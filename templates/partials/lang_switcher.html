@@ -1,13 +1,15 @@
 {% if available_langs is defined and current_lang is defined %}
   <div class="lang-switcher">
     {% for lang_code in available_langs %}
-      {% set lang_name = 'English' if lang_code == 'en' else '中文' %}
-      {% if lang_code == current_lang %}
-        <span class="lang-current">{{ lang_name }}</span>
-      {% else %}
-        <a href="{{ request.url.path }}?lang={{ lang_code }}" class="lang-link">{{ lang_name }}</a>
+      {% if lang_code != current_lang %}
+        <a href="{{ request.url.path }}?lang={{ lang_code }}" class="lang-link" title="Switch to {{ 'English' if lang_code == 'en' else 'Chinese' }}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+        </a>
       {% endif %}
     {% endfor %}
   </div>
 {% endif %}
-

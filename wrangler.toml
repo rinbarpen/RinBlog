@@ -1,0 +1,9 @@
+name = "rinblog"
+pages_build_output_dir = "site"
+compatibility_date = "2024-11-27"
+
+# If you want to use dynamic features (comments) on Cloudflare,
+# you would need to rewrite the backend to use Cloudflare Workers (JS/Python)
+# and D1 database, which is a significant migration from FastAPI + SQLite.
+# Currently, this deployment only supports the static version of the blog.
+

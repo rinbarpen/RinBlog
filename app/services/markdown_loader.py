@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import re
+import html
 from datetime import date, datetime
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
 import frontmatter
 from markdown_it import MarkdownIt
+from mdit_py_plugins.tasklists import tasklists_plugin
 
 from app.models.post import BlogPost, GroupSummary
 
@@ -18,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 CONTENT_DIR = BASE_DIR / "content"
 
 _markdown = MarkdownIt("commonmark", {"html": True}).enable("table").enable("strikethrough").enable("fence")
+_markdown.use(tasklists_plugin)
 
 _posts_index: Dict[str, BlogPost] = {}
 _ordered_posts: List[BlogPost] = []
@@ -42,10 +45,6 @@ def refresh_cache() -> None:
 
     # Recursively scan all .md files in content directory
     for path in sorted(CONTENT_DIR.rglob("*.md")):
-        # Skip files in special directories like daily/2025
-        if "daily" in path.parts and path.parts[-2] not in ["daily"]:
-            continue
-            
         try:
             post = _load_post(path)
         except Exception as exc:  # pylint: disable=broad-except
@@ -56,16 +55,25 @@ def refresh_cache() -> None:
             continue
 
         # Extract column and subcolumn from path
-        # Path structure: content/专栏名/小专栏名/文章.md
+        # Path structure: content/posts/专栏名/小专栏名/文章.md
         relative_path = path.relative_to(CONTENT_DIR)
-        parts = relative_path.parts
+        parts = list(relative_path.parts)
+
+        # If inside "posts" directory, treat "posts" as root
+        if parts and parts[0] == "posts":
+            parts.pop(0)
         
         if len(parts) >= 3:  # 专栏/小专栏/文章.md
-            post.column = parts[0]
-            post.subcolumn = parts[1]
+            # Exclude daily/2025/... from being a column named "daily" with subcolumn "2025"
+            # But we can still assign it if we want, just filter in nav.
+            # However, let's be cleaner.
+            if parts[0] != "daily":
+                post.column = parts[0]
+                post.subcolumn = parts[1]
         elif len(parts) == 2:  # 专栏/文章.md
-            post.column = parts[0]
-            post.subcolumn = None
+            if parts[0] != "daily":
+                post.column = parts[0]
+                post.subcolumn = None
         # else: 根目录下的文件，column 和 subcolumn 为 None
 
         posts.append(post)
@@ -99,7 +107,8 @@ def refresh_cache() -> None:
             if post.group_description and not summary.description:
                 summary.description = post.group_description
 
-    posts.sort(key=lambda item: item.date, reverse=True)
+    # Sort by pinned (desc), then date (desc)
+    posts.sort(key=lambda item: (item.pinned, item.date), reverse=True)
     _ordered_posts = posts
     _posts_index = {post.slug: post for post in posts}
     _daily_posts = [post for post in posts if post.is_daily]
@@ -177,6 +186,17 @@ def list_subcolumns(column: str) -> List[str]:
     return sorted(subcolumns)
 
 
+def get_navigation_structure() -> Dict[str, List[str]]:
+    """Return a dictionary of column -> list[subcolumns] for navigation."""
+    structure = {}
+    for col, subcols in _columns_index.items():
+        # Filter out _root and sort subcolumns
+        subs = sorted([s for s in subcols.keys() if s != "_root"])
+        structure[col] = subs
+    # Sort columns alphabetically
+    return dict(sorted(structure.items()))
+
+
 def list_posts_by_column(column: str, subcolumn: Optional[str] = None) -> List[BlogPost]:
     """List posts in a column, optionally filtered by subcolumn."""
     if column not in _columns_index:
@@ -213,6 +233,10 @@ def _load_post(path: Path) -> Optional[BlogPost]:
     if not content:
         logger.warning("Skipping empty post: %s", path)
         return None
+    
+    # Skip draft posts
+    if meta.get("draft") or meta.get("published") is False:
+        return None
 
     title = str(meta.get("title") or _title_from_path(path))
     slug = str(meta.get("slug") or _slugify(path.stem))
@@ -239,12 +263,23 @@ def _load_post(path: Path) -> Optional[BlogPost]:
         if isinstance(group_description, str):
             group_description = group_description.strip()
 
-    content_html = _markdown.render(content)
+    content_for_render, preview_map = _process_preview_shortcodes(content)
+    content_html = _markdown.render(content_for_render)
+    
+    # Inject previews back into HTML
+    for placeholder, preview_html in preview_map.items():
+        content_html = content_html.replace(placeholder, preview_html)
+
     summary = _extract_summary(meta, content)
     excerpt = _extract_excerpt_html(content_html)
 
     tags = _normalize_tags(meta.get("tags"))
-    is_daily = bool(meta.get("daily")) or (meta.get("type") == "daily")
+    pinned = bool(meta.get("pinned")) or bool(meta.get("pin"))
+    
+    # Check if daily based on metadata OR path
+    is_daily_meta = bool(meta.get("daily")) or (meta.get("type") == "daily")
+    is_daily_path = "daily" in path.parts
+    is_daily = is_daily_meta or is_daily_path
     
     from app.services.i18n import normalize_lang
     lang = normalize_lang(meta.get("lang") or meta.get("language"))
@@ -263,6 +298,7 @@ def _load_post(path: Path) -> Optional[BlogPost]:
         tags=tags,
         is_daily=is_daily,
         lang=lang,
+        pinned=pinned,
     )
 
 
@@ -334,6 +370,92 @@ def _extract_excerpt_html(html: str) -> str:
     if len(html) > 280:
         snippet = f"{snippet}..."
     return snippet
+
+
+def _process_preview_shortcodes(content: str) -> tuple[str, dict[str, str]]:
+    """
+    Find @[Preview](url) and @content/path:1-10 patterns.
+    Replace them with placeholders and return a map of placeholder -> HTML.
+    """
+    preview_map = {}
+    
+    # 1. URL Previews: @[Preview](url)
+    # Regex to capture url
+    url_pattern = re.compile(r'@\[Preview\]\((https?://[^\)]+)\)')
+    
+    def url_replacer(match):
+        url = match.group(1)
+        placeholder = f"<!--PREVIEW_URL_{len(preview_map)}-->"
+        # Generate a simple card HTML
+        card_html = (
+            f'<div class="link-preview-card">'
+            f'  <a href="{url}" target="_blank" rel="noopener noreferrer">'
+            f'    <div class="link-preview-info">'
+            f'      <span class="link-preview-title">{html.escape(url)}</span>'
+            f'      <span class="link-preview-domain">{html.escape(url.split("/")[2])}</span>'
+            f'    </div>'
+            f'  </a>'
+            f'</div>'
+        )
+        preview_map[placeholder] = card_html
+        return placeholder
+
+    content = url_pattern.sub(url_replacer, content)
+
+    # 2. Local File Previews: @content/path/to/file.md:10-20
+    # Regex to capture path and optional line range
+    file_pattern = re.compile(r'@(content/[a-zA-Z0-9_./-]+)(?::(\d+)-(\d+))?')
+
+    def file_replacer(match):
+        rel_path_str = match.group(1)
+        start_line = match.group(2)
+        end_line = match.group(3)
+        
+        file_path = BASE_DIR / rel_path_str
+        if not file_path.exists() or not file_path.is_file():
+            return match.group(0)  # Leave as is if file not found
+
+        try:
+            file_content = file_path.read_text(encoding="utf-8")
+            lines = file_content.splitlines()
+            
+            if start_line and end_line:
+                start = max(0, int(start_line) - 1)
+                end = min(len(lines), int(end_line))
+                snippet = "\n".join(lines[start:end])
+                source_info = f"{rel_path_str}:{start_line}-{end_line}"
+            else:
+                snippet = file_content
+                source_info = rel_path_str
+
+            # Detect language from extension
+            ext = file_path.suffix.lstrip(".").lower() or "text"
+            
+            # Render as code block or markdown quote depending on type?
+            # Let's use a styled block
+            placeholder = f"<!--PREVIEW_FILE_{len(preview_map)}-->"
+            
+            # We'll render the snippet as a code block to preserve formatting,
+            # but wrap it in a container that shows the source path.
+            # If it's markdown, we might want to render it? 
+            # User said "HTML form", let's render as code block for clarity as it's a preview.
+            
+            block_html = (
+                f'<div class="file-preview-card">'
+                f'  <div class="file-preview-header">{html.escape(source_info)}</div>'
+                f'  <pre><code class="language-{ext}">{html.escape(snippet)}</code></pre>'
+                f'</div>'
+            )
+            preview_map[placeholder] = block_html
+            return placeholder
+            
+        except Exception as e:
+            logger.warning(f"Failed to read file preview {rel_path_str}: {e}")
+            return match.group(0)
+
+    content = file_pattern.sub(file_replacer, content)
+    
+    return content, preview_map
 
 
 def _normalize_tags(value) -> List[str]:

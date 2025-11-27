@@ -13,7 +13,28 @@
         <h1><a href="{{ url_for('homepage') }}?lang={{ current_lang if current_lang is defined else 'en' }}">🖊 RinBlog</a></h1>
         <nav>
           <a href="{{ url_for('homepage') }}?lang={{ current_lang if current_lang is defined else 'en' }}">Home</a>
+          
+          {% if nav_structure %}
+            {% for col, subcols in nav_structure.items() %}
+              {% if subcols %}
+                <div class="nav-dropdown">
+                  <div class="nav-dropdown-trigger">
+                    <a href="{{ url_for('column_posts', column=col) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ col|title }}</a>
+                  </div>
+                  <div class="nav-dropdown-content">
+                    {% for sub in subcols %}
+                      <a href="{{ url_for('subcolumn_posts', column=col, subcolumn=sub) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ sub|title }}</a>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% else %}
+                <a href="{{ url_for('column_posts', column=col) }}?lang={{ current_lang if current_lang is defined else 'en' }}">{{ col|title }}</a>
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+
           <a href="{{ url_for('daily_posts') }}?lang={{ current_lang if current_lang is defined else 'en' }}">Daily</a>
+          <a href="{{ url_for('post_detail', slug='todo') }}?lang={{ current_lang if current_lang is defined else 'en' }}">TODO</a>
           {% include "partials/lang_switcher.html" with context %}
         </nav>
       </div>
@@ -26,6 +47,33 @@
         <p>&copy; RinBlog. All rights reserved.</p>
       </div>
     </footer>
+    <script>
+      // File upload UI enhancement
+      document.addEventListener('DOMContentLoaded', function() {
+        const fileInputs = document.querySelectorAll('input[type="file"][name="images"]');
+        fileInputs.forEach(function(input) {
+          const label = input.closest('.file-upload-label');
+          if (!label) return;
+          
+          const countSpan = label.querySelector('.file-upload-count');
+          if (!countSpan) return;
+          
+          function updateFileCount() {
+            const files = input.files;
+            if (files && files.length > 0) {
+              countSpan.textContent = `(${files.length} file${files.length > 1 ? 's' : ''} selected)`;
+              countSpan.style.display = 'inline-block';
+            } else {
+              countSpan.textContent = '';
+              countSpan.style.display = 'none';
+            }
+          }
+          
+          input.addEventListener('change', updateFileCount);
+          updateFileCount(); // Initial check
+        });
+      });
+    </script>
   </body>
 </html>
 

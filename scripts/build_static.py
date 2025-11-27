@@ -28,6 +28,13 @@ DEFAULT_OUTPUT = BASE_DIR / "site"
 class StaticRequest:
     url_builder: Callable[[str, Dict[str, str]], str]
 
+    @property
+    def url(self):
+        # Mock url object
+        class Url:
+            path = "/"
+        return Url()
+
     def url_for(self, name: str, **params: str) -> str:
         return self.url_builder(name, params)
 
