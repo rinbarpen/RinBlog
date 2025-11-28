@@ -1,42 +1,86 @@
+{% macro render_comment(comment, depth=0) %}
+  <li data-comment-id="{{ comment.comment_id }}">
+    <article>
+      <header>
+        <strong>{{ comment.display_name }}</strong>
+        <span class="meta">{{ comment.display_time }}</span>
+      </header>
+      <p>{{ comment.content }}</p>
+      {% if comment.image_urls %}
+        <div class="comment-images">
+          {% for image_url in comment.image_urls %}
+            <img src="{{ image_url }}" alt="Comment image" loading="lazy" class="comment-image">
+          {% endfor %}
+        </div>
+      {% endif %}
+      <div class="comment-actions">
+        <button
+          type="button"
+          class="comment-reply-button"
+          data-comment-id="{{ comment.comment_id }}"
+          data-comment-author="{{ comment.display_name }}"
+          aria-label="Reply to {{ comment.display_name }}"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 10 4 15 9 20"></polyline>
+            <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+          </svg>
+        </button>
+      </div>
+    </article>
+    {% if comment.children %}
+      <ul class="comment-children">
+        {% for child in comment.children %}
+          {{ render_comment(child, depth + 1) }}
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </li>
+{% endmacro %}
+
 <section id="comments">
   <h3>Comments</h3>
   {% if comments_enabled %}
     {% if comments %}
       <ul class="comment-list">
         {% for comment in comments %}
-          <li>
-            <article>
-              <header>
-                <strong>{{ comment.display_name }}</strong>
-                <span class="meta">{{ comment.display_time }}</span>
-              </header>
-              <p>{{ comment.content }}</p>
-              {% if comment.image_urls %}
-                <div class="comment-images">
-                  {% for image_url in comment.image_urls %}
-                    <img src="{{ image_url }}" alt="Comment image" loading="lazy" class="comment-image">
-                  {% endfor %}
-                </div>
-              {% endif %}
-            </article>
-          </li>
+          {{ render_comment(comment) }}
         {% endfor %}
       </ul>
     {% else %}
       <p>No comments yet. Be the first to share your thoughts!</p>
     {% endif %}
-
-    <form class="comment-form" method="post" action="{{ url_for('create_comment', slug=post.slug) }}" enctype="multipart/form-data">
+    <div class="comment-controls">
+      <button type="button" class="comment-new-button" id="comment-new-button">
+        Write a Comment
+      </button>
+    </div>
+    <div id="comment-form-anchor"></div>
+    <form
+      id="comment-form"
+      class="comment-form"
+      method="post"
+      action="{{ url_for('create_comment', slug=post.slug) }}"
+      enctype="multipart/form-data"
+      {% if not form_error %}hidden{% endif %}
+    >
+      <input type="hidden" name="parent_id" id="comment-parent-id" value="" />
       {% if form_error %}
         <p class="form-error">{{ form_error }}</p>
       {% endif %}
+      <div class="reply-context" id="reply-context" hidden>
+        <div class="reply-context-text" id="reply-context-text"></div>
+        <button type="button" class="reply-context-cancel" id="reply-context-cancel" aria-label="Cancel reply">
+          Cancel
+        </button>
+      </div>
       <label>
         Nickname (optional)
-        <input type="text" name="nickname" maxlength="50" />
+        <input id="comment-nickname" type="text" name="nickname" maxlength="50" />
       </label>
       <label>
         Comment
-        <textarea name="content" rows="4" required></textarea>
+        <textarea id="comment-content" name="content" rows="4" required></textarea>
       </label>
       <label class="file-upload-label">
         <input type="file" name="images" accept="image/*" multiple style="display: none;" />
@@ -50,11 +94,14 @@
         </span>
         <span class="file-upload-count"></span>
       </label>
-      <button type="submit">Post Comment</button>
+      <div class="comment-form-actions">
+        <button type="submit">Post Comment</button>
+        <button type="button" class="comment-cancel-button" id="comment-cancel-button">
+          Cancel
+        </button>
+      </div>
     </form>
   {% else %}
     <p>Comments are available on the live site.</p>
   {% endif %}
 </section>
-
-

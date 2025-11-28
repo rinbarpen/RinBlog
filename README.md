@@ -70,11 +70,27 @@ uv run python scripts/build_static.py
 
 ### Cloudflare Pages 部署
 
-已添加 GitHub Actions 工作流 `.github/workflows/deploy-cloudflare.yml`。
+#### 一键部署
+
+点击下方按钮即可在 Cloudflare Pages 上一键部署：
+
+[![Deploy to Cloudflare Pages](https://deploy.workers.cloudflare.com/button)](https://dash.cloudflare.com/?to=/:account/pages/new/create?repo=https://github.com/rinbarpen/RinBlog)
+
+或者直接访问 [Cloudflare Pages 创建页面](https://dash.cloudflare.com/?to=/:account/pages/new/create) 并连接你的 GitHub 仓库。
+
+**部署配置**：
+- **构建命令**：`uv run python scripts/build_static.py`
+- **构建输出目录**：`site`
+- **Python 版本**：3.10+（需要在构建环境中安装 `uv`）
+
+#### 手动配置
 
 1.  将代码推送到 GitHub。
 2.  在 Cloudflare Dashboard 中创建一个新的 Pages 项目，连接你的 GitHub 仓库。
-3.  或者使用 GitHub Actions 自动部署（需要在 Cloudflare 获取 Account ID 和 API Token 并配置到 GitHub Secrets）。
+3.  配置构建设置：
+    - 构建命令：`uv run python scripts/build_static.py`
+    - 输出目录：`site`
+4.  或者使用 GitHub Actions 自动部署（需要在 Cloudflare 获取 Account ID 和 API Token 并配置到 GitHub Secrets）。
     *   `CLOUDFLARE_ACCOUNT_ID`
     *   `CLOUDFLARE_API_TOKEN`
 

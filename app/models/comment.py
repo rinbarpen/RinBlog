@@ -15,15 +15,18 @@ class Comment(SQLModel, table=True):
     nickname: Optional[str] = Field(default=None, max_length=50)
     content: str = Field(min_length=1, max_length=1000)
     image_urls: Optional[List[str]] = Field(default=None, sa_column=Column(JSON))
+    parent_id: Optional[int] = Field(default=None, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 @dataclass(slots=True)
 class CommentView:
+    comment_id: int
     display_name: str
     content: str
     display_time: str
     image_urls: List[str]
+    children: List["CommentView"]
 
     @classmethod
     def from_model(cls, comment: Comment) -> "CommentView":
@@ -45,10 +48,12 @@ class CommentView:
                 image_urls = comment.image_urls
         
         return cls(
+            comment_id=comment.id or 0,
             display_name=display_name,
             content=comment.content,
             display_time=display_time,
             image_urls=image_urls or [],
+            children=[],
         )
 
 

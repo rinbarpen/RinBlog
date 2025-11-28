@@ -47,9 +47,12 @@
         <p>&copy; RinBlog. All rights reserved.</p>
       </div>
     </footer>
+    <button id="back-to-top" aria-label="Back to top">
+      ↑
+    </button>
     <script>
-      // File upload UI enhancement
       document.addEventListener('DOMContentLoaded', function() {
+        // File upload UI enhancement
         const fileInputs = document.querySelectorAll('input[type="file"][name="images"]');
         fileInputs.forEach(function(input) {
           const label = input.closest('.file-upload-label');
@@ -72,6 +75,190 @@
           input.addEventListener('change', updateFileCount);
           updateFileCount(); // Initial check
         });
+
+        // Comment nickname persistence
+        const safeStorage = {
+          get(key) {
+            try {
+              return window.localStorage.getItem(key);
+            } catch (err) {
+              return null;
+            }
+          },
+          set(key, value) {
+            try {
+              window.localStorage.setItem(key, value);
+            } catch (err) {
+              // ignore storage errors (private mode, etc.)
+            }
+          }
+        };
+
+        const nicknameStorageKey = 'rinblog:comment-nickname';
+        const nicknameInput = document.getElementById('comment-nickname');
+        if (nicknameInput) {
+          const storedNickname = safeStorage.get(nicknameStorageKey);
+          if (storedNickname) {
+            nicknameInput.value = storedNickname;
+          }
+          nicknameInput.addEventListener('blur', function() {
+            if (nicknameInput.value.trim()) {
+              safeStorage.set(nicknameStorageKey, nicknameInput.value.trim());
+            }
+          });
+        }
+
+        // Reply panel interactions
+        const commentForm = document.getElementById('comment-form');
+        const formAnchor = document.getElementById('comment-form-anchor');
+        const commentTextarea = document.getElementById('comment-content');
+        const replyContext = document.getElementById('reply-context');
+        const replyContextText = document.getElementById('reply-context-text');
+        const replyContextCancel = document.getElementById('reply-context-cancel');
+        const commentNewButton = document.getElementById('comment-new-button');
+        const commentCancelButton = document.getElementById('comment-cancel-button');
+        const replyButtons = document.querySelectorAll('.comment-reply-button');
+
+        const commentParentIdInput = document.getElementById('comment-parent-id');
+
+        const focusTextarea = () => {
+          if (commentTextarea) {
+            commentTextarea.focus();
+          }
+        };
+
+        function clearReplyContext() {
+          if (replyContext) {
+            replyContext.hidden = true;
+            replyContext.dataset.author = '';
+          }
+          if (commentParentIdInput) {
+            commentParentIdInput.value = '';
+          }
+        }
+
+        function showFormAtAnchor() {
+          if (!commentForm || !formAnchor) return;
+          clearReplyContext();
+          formAnchor.appendChild(commentForm);
+          commentForm.hidden = false;
+          commentForm.classList.remove('comment-form-inline');
+          requestAnimationFrame(() => {
+            commentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            focusTextarea();
+          });
+        }
+
+        function showFormBelow(commentItem) {
+          if (!commentForm) return;
+          if (commentItem) {
+            commentItem.insertAdjacentElement('afterend', commentForm);
+          } else if (formAnchor) {
+            formAnchor.appendChild(commentForm);
+          }
+          commentForm.hidden = false;
+          commentForm.classList.add('comment-form-inline');
+          requestAnimationFrame(() => {
+            commentForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            focusTextarea();
+          });
+        }
+
+        function hideCommentForm() {
+          if (!commentForm || !formAnchor) return;
+          formAnchor.appendChild(commentForm);
+          commentForm.hidden = true;
+          commentForm.classList.remove('comment-form-inline');
+          clearReplyContext();
+        }
+
+        if (commentForm && commentTextarea && replyContext && replyContextText) {
+          replyButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+              const author = button.dataset.commentAuthor || 'Anonymous';
+              const commentId = button.dataset.commentId;
+              replyContext.hidden = false;
+              replyContext.dataset.author = author;
+              replyContextText.textContent = `Replying to ${author}`;
+              
+              if (commentParentIdInput) {
+                commentParentIdInput.value = commentId;
+              }
+
+              const targetComment = button.closest('li');
+              if (targetComment) {
+                showFormBelow(targetComment);
+              } else {
+                showFormAtAnchor();
+              }
+
+              if (commentTextarea) {
+                commentTextarea.focus();
+              }
+
+              commentForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            });
+          });
+        }
+
+        if (replyContextCancel) {
+          replyContextCancel.addEventListener('click', function() {
+            clearReplyContext();
+            if (commentForm && commentTextarea) {
+              commentTextarea.value = '';
+            }
+          });
+        }
+
+        if (commentNewButton && commentForm) {
+          commentNewButton.addEventListener('click', function() {
+            clearReplyContext();
+            showFormAtAnchor();
+          });
+        }
+
+        if (commentCancelButton) {
+          commentCancelButton.addEventListener('click', function() {
+            hideCommentForm();
+          });
+        }
+
+        if (commentForm) {
+          commentForm.addEventListener('submit', function(e) {
+            if (nicknameInput && nicknameInput.value.trim()) {
+              safeStorage.set(nicknameStorageKey, nicknameInput.value.trim());
+            }
+            
+            // Remove parent_id field if it's empty to avoid sending empty string
+            if (commentParentIdInput) {
+              if (!commentParentIdInput.value || commentParentIdInput.value.trim() === '') {
+                commentParentIdInput.remove();
+              }
+            }
+            
+            // Don't clear reply context before submit, it will clear parent_id!
+            // The redirect will refresh the page anyway
+          });
+        }
+
+        // Back to top button
+        const backToTopButton = document.getElementById('back-to-top');
+        if (backToTopButton) {
+          const toggleBackToTopVisibility = function() {
+            if (window.scrollY > 320) {
+              backToTopButton.classList.add('is-visible');
+            } else {
+              backToTopButton.classList.remove('is-visible');
+            }
+          };
+
+          window.addEventListener('scroll', toggleBackToTopVisibility, { passive: true });
+          toggleBackToTopVisibility();
+
+          backToTopButton.addEventListener('click', function() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
       });
     </script>
   </body>

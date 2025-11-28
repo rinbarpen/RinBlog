@@ -18,7 +18,22 @@ UPLOAD_DIR = Path("static/uploads/comments")
 
 def list_comment_views(session: Session, slug: str) -> List[CommentView]:
     records = comment_repo.list_comments(session, slug)
-    return [CommentView.from_model(record) for record in records]
+    # Convert all to views first
+    all_views = [CommentView.from_model(record) for record in records]
+    
+    # Build a map of id -> view
+    view_map = {view.comment_id: view for view in all_views}
+    
+    # Separate roots and children
+    roots = []
+    for record, view in zip(records, all_views):
+        if record.parent_id and record.parent_id in view_map:
+            parent = view_map[record.parent_id]
+            parent.children.append(view)
+        else:
+            roots.append(view)
+            
+    return roots
 
 
 def save_upload_file(upload_file: Any) -> Optional[str]:
@@ -61,7 +76,8 @@ def create_comment(
     slug: str, 
     nickname: Optional[str], 
     content: str, 
-    images: Optional[List[Any]] = None
+    images: Optional[List[Any]] = None,
+    parent_id: Optional[int] = None
 ) -> CommentView:
     safe_nickname = (nickname or "").strip()
     safe_content = (content or "").strip()
@@ -94,6 +110,7 @@ def create_comment(
         nickname=safe_nickname or None,
         content=safe_content,
         image_urls=image_urls if image_urls else None,
+        parent_id=parent_id,
     )
     return CommentView.from_model(record)
 

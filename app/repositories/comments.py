@@ -13,9 +13,21 @@ def list_comments(session: Session, slug: str) -> List[Comment]:
 
 
 def create_comment(
-    session: Session, *, slug: str, nickname: Optional[str], content: str, image_urls: Optional[List[str]] = None
+    session: Session, 
+    *, 
+    slug: str, 
+    nickname: Optional[str], 
+    content: str, 
+    image_urls: Optional[List[str]] = None,
+    parent_id: Optional[int] = None
 ) -> Comment:
-    comment = Comment(post_slug=slug, nickname=nickname, content=content, image_urls=image_urls)
+    comment = Comment(
+        post_slug=slug, 
+        nickname=nickname, 
+        content=content, 
+        image_urls=image_urls,
+        parent_id=parent_id
+    )
     session.add(comment)
     session.commit()
     session.refresh(comment)

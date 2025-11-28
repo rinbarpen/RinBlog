@@ -9,9 +9,7 @@
       {% endif %}
       <li class="tag-badge" {% if collection and collection.color %}style="--tag-color: {{ collection.color }}"{% endif %}>
         <a href="{{ tag_href }}" class="tag-link">
-          <span class="tag-label">
-            #{{ badge.tag|upper }}
-          </span>
+          <span class="tag-label">{{ badge.tag|upper }}</span>
         </a>
       </li>
     {% endfor %}

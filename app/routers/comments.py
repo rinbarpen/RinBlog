@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Form, File, UploadFile, HTTPException, Request, status
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 from typing import List, Optional
@@ -20,6 +20,7 @@ def create_comment(
     slug: str,
     nickname: str = Form(default=""),
     content: str = Form(...),
+    parent_id: Optional[str] = Form(default=None),
     images: Optional[List[UploadFile]] = File(default=None),
     session: Session = Depends(get_session),
 ):
@@ -27,13 +28,22 @@ def create_comment(
     if post is None:
         raise HTTPException(status_code=404, detail="Post not found")
 
+    # Convert empty string or None to None, then to int if valid
+    parent_id_int = None
+    if parent_id and parent_id.strip():
+        try:
+            parent_id_int = int(parent_id.strip())
+        except (ValueError, TypeError):
+            parent_id_int = None
+
     try:
         comment_service.create_comment(
             session, 
             slug=slug, 
             nickname=nickname, 
             content=content,
-            images=images
+            images=images,
+            parent_id=parent_id_int
         )
     except ValueError as exc:
         comments = comment_service.list_comment_views(session, slug)
@@ -49,7 +59,7 @@ def create_comment(
             status_code=400,
         )
 
-    redirect_url = request.url_for("post_detail", slug=slug) + "#comments"
+    redirect_url = str(request.url_for("post_detail", slug=slug)) + "#comments"
     return RedirectResponse(redirect_url, status_code=status.HTTP_303_SEE_OTHER)
 
 
